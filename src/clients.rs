@@ -3,12 +3,15 @@ use std::{
     cmp,
     fs::File,
     io::{self, BufReader},
+    ops::DerefMut,
     path::Path,
+    sync::Arc,
 };
 
 use serde::{Deserialize, Serialize};
 use serde_json as json;
 use thiserror::Error;
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::paths::get_paths;
@@ -31,7 +34,7 @@ impl Ord for Client {
     }
 }
 pub struct ClientGroup {
-    clients: Vec<Client>,
+    clients: Vec<Arc<Mutex<Client>>>,
     next_index: usize,
 }
 
@@ -46,13 +49,13 @@ pub enum LoadError {
 const FILE_NAME: &str = "clients.json";
 
 impl ClientGroup {
-    pub fn next(&mut self) -> &'_ Client {
+    pub fn next(&mut self) -> Arc<Mutex<Client>> {
         if self.next_index >= self.clients.len() {
             self.next_index = 0;
         }
         let ret = unsafe { self.clients.get(self.next_index).unwrap_unchecked() };
         self.next_index += 1;
-        ret
+        Arc::clone(ret)
     }
 
     pub fn load(predefined_path: Option<&Path>) -> Result<Self, LoadError> {
@@ -61,18 +64,21 @@ impl ClientGroup {
         clients
             .iter_mut()
             .enumerate()
-            .for_each(|(index, client)| client.order = index);
+            .for_each(|(index, mut client)| client.deref_mut().order = index);
         Ok(Self {
-            clients,
+            clients: clients
+                .into_iter()
+                .map(|x| Arc::new(Mutex::new(x)))
+                .collect(),
             next_index: 0,
         })
     }
 
-    pub fn add(&mut self, client: Client) {
+    pub async fn add(&mut self, client: Client) {
         let index = client.order.max(self.clients.len());
-        self.clients.insert(index, client);
+        self.clients.insert(index, Arc::new(Mutex::new(client)));
         for i in (index + 1)..self.clients.len() {
-            self.clients[i].order = i + 1;
+            self.clients[i].lock().await.order = i + 1;
         }
     }
 

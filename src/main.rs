@@ -1,7 +1,7 @@
-use bookd_ceo::handle_client::handle_connection;
+use bookd_ceo::{clients::ClientGroup, coordinator::Coordinator, handle_client::handle_connection};
 use clap::Parser;
-use std::{borrow::Cow, num::NonZero, process::ExitCode, thread};
-use tokio::{net::TcpListener, signal};
+use std::{borrow::Cow, num::NonZero, process::ExitCode, sync::Arc, thread};
+use tokio::{net::TcpListener, signal, sync::Mutex};
 mod args;
 use args::Cli;
 
@@ -40,6 +40,9 @@ fn main() -> ExitCode {
 }
 
 async fn async_main(cli: Cli) -> anyhow::Result<()> {
+    let cg = ClientGroup::load(None)?;
+    let coordinator = Arc::new(Mutex::new(Coordinator::new(cg)));
+
     let ip = cli
         .bind_address
         .map(Cow::Owned)
@@ -52,8 +55,9 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
                     match accept_result {
                         Ok((socket, addr)) => {
                             tracing::info!("New connection from: {}", addr);
+                            let local_coordinator = Arc::clone(&coordinator);
                             tokio::spawn(async move {
-                                match handle_connection(socket).await {
+                                match handle_connection(socket, local_coordinator).await {
                                     Ok(_) => tracing::info!("Client disconnected: {}", addr),
                                     Err(e) => tracing::error!("Error at {}: {:?}", addr, e),
                                 }
