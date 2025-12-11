@@ -45,7 +45,7 @@ struct ToClient<T> {
     value: T,
 }
 
-async fn handle_connection(socket: TcpStream) -> Result<(), ConnectionError> {
+pub async fn handle_connection(socket: TcpStream) -> Result<(), ConnectionError> {
     let (reader, writer) = socket.into_split();
 
     let mut framed_reader = FramedRead::new(reader, LinesCodec::new());

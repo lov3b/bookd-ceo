@@ -7,6 +7,9 @@ pub struct Cli {
     #[arg(short, long)]
     pub threads: Option<usize>,
 
-    #[arg(long)]
-    pub one: String,
+    #[arg(short, long)]
+    pub bind_address: Option<String>,
+
+    #[arg(short, long)]
+    pub port: Option<u16>,
 }
