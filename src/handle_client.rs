@@ -2,7 +2,7 @@ use crate::coordinator::{BroadcastEvent, Coordinator};
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use serde_json as json;
-use std::{borrow::Cow, str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc};
 use thiserror::Error;
 use tokio::{
     net::TcpStream,
