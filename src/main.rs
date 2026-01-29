@@ -1,13 +1,11 @@
 use bookd_ceo::{clients::ClientGroup, coordinator::Coordinator, handle_client::handle_connection};
 use clap::Parser;
-use std::{borrow::Cow, num::NonZero, process::ExitCode, sync::Arc, thread};
+use std::{num::NonZero, process::ExitCode, sync::Arc, thread};
 use tokio::{net::TcpListener, signal, sync::Mutex};
 mod args;
 use args::Cli;
 
 const LOWEST_THREADS: NonZero<usize> = unsafe { NonZero::new(4).unwrap_unchecked() };
-const BIND_IP: &str = "0.0.0.0";
-const BIND_PORT: u16 = 8080;
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
@@ -42,12 +40,7 @@ async fn async_main(cli: Cli) -> anyhow::Result<()> {
     let cg = ClientGroup::load(None)?;
     let coordinator = Arc::new(Mutex::new(Coordinator::new(cg)));
 
-    let ip = cli
-        .bind_address
-        .map(Cow::Owned)
-        .unwrap_or_else(|| Cow::Borrowed(BIND_IP));
-    let port = cli.port.unwrap_or(BIND_PORT);
-    let listener = TcpListener::bind(format!("{}:{}", ip, port)).await?;
+    let listener = TcpListener::bind(format!("{}:{}", cli.bind_address, cli.port)).await?;
     loop {
         tokio::select! {
                 accept_result = listener.accept() => {
