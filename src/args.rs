@@ -1,29 +1,26 @@
-use std::num::NonZero;
+use std::{num::NonZero, thread};
 
 use clap::Parser;
+
+pub const LOWEST_THREADS: NonZero<usize> = unsafe { NonZero::new(4).unwrap_unchecked() };
+pub const DEFAULT_BIND_IP: &str = "0.0.0.0";
+pub const DEFAULT_PORT: u16 = 8080;
 
 #[derive(Parser)]
 #[command(about = "Manages the bookd clients", long_about = None)]
 pub struct Cli {
-    /// At least 4 threads are required
-    #[arg(short, long)]
-    pub threads: Option<NonZero<usize>>,
+    /// At least 4 threads are required.
+    /// The default is as many threads as processors.
+    #[arg(short, long, default_value_t = get_default_threads())]
+    pub threads: NonZero<usize>,
 
-    #[arg(short, long, default_value = "default_bind_ip")]
-    /// Default is 0.0.0.0
+    #[arg(short, long, default_value_t = DEFAULT_BIND_IP.to_string())]
     pub bind_address: String,
 
-    #[arg(short, long, default_value = "default_bind_port")]
-    /// Default is 8080
+    #[arg(short, long, default_value_t = DEFAULT_PORT)]
     pub port: u16,
 }
 
-#[allow(dead_code)]
-fn default_bind_ip() -> String {
-    "0.0.0.0".into()
-}
-
-#[allow(dead_code)]
-fn default_bind_port() -> u16 {
-    8080
+fn get_default_threads() -> NonZero<usize> {
+    thread::available_parallelism().unwrap_or(LOWEST_THREADS)
 }

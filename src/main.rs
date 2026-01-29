@@ -1,18 +1,13 @@
 use bookd_ceo::{clients::ClientGroup, coordinator::Coordinator, handle_client::handle_connection};
 use clap::Parser;
-use std::{num::NonZero, process::ExitCode, sync::Arc, thread};
+use std::{process::ExitCode, sync::Arc};
 use tokio::{net::TcpListener, signal, sync::Mutex};
 mod args;
 use args::Cli;
 
-const LOWEST_THREADS: NonZero<usize> = unsafe { NonZero::new(4).unwrap_unchecked() };
-
 fn main() -> ExitCode {
     let cli = Cli::parse();
-    let threads = cli
-        .threads
-        .unwrap_or_else(|| thread::available_parallelism().unwrap_or(LOWEST_THREADS))
-        .min(LOWEST_THREADS);
+    let threads = cli.threads.min(args::LOWEST_THREADS);
 
     let runtime = match tokio::runtime::Builder::new_multi_thread()
         .thread_name(concat!(env!("CARGO_PKG_NAME"), "-worker"))
