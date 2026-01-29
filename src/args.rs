@@ -1,3 +1,5 @@
+use std::num::NonZero;
+
 use clap::Parser;
 
 #[derive(Parser)]
@@ -5,7 +7,7 @@ use clap::Parser;
 pub struct Cli {
     /// At least 4 threads are required
     #[arg(short, long)]
-    pub threads: Option<usize>,
+    pub threads: Option<NonZero<usize>>,
 
     #[arg(short, long)]
     pub bind_address: Option<String>,

@@ -13,7 +13,6 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
     let threads = cli
         .threads
-        .and_then(NonZero::new)
         .unwrap_or_else(|| thread::available_parallelism().unwrap_or(LOWEST_THREADS))
         .min(LOWEST_THREADS);
 
