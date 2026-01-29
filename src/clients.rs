@@ -22,6 +22,8 @@ pub struct Client {
     pub name: String,
     pub uses: usize,
     pub order: usize,
+    #[serde(skip_serializing, default)]
+    pub is_connected: bool,
 }
 
 impl Ord for Client {
@@ -56,6 +58,25 @@ impl ClientGroup {
         let ret = unsafe { self.clients.get(self.next_index).unwrap_unchecked() };
         self.next_index += 1;
         Arc::clone(ret)
+    }
+
+    pub async fn contains(&self, id: Uuid) -> bool {
+        for client in &self.clients {
+            if client.lock().await.id == id {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub async fn get_copy(&self, id: &Uuid) -> Option<Client> {
+        for client in &self.clients {
+            let guard = client.lock().await;
+            if guard.id == *id {
+                return Some(guard.clone());
+            }
+        }
+        None
     }
 
     pub fn load(predefined_path: Option<&Path>) -> Result<Self, LoadError> {
