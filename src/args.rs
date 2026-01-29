@@ -19,6 +19,9 @@ pub struct Cli {
 
     #[arg(short, long, default_value_t = DEFAULT_PORT)]
     pub port: u16,
+
+    #[arg(short, long)]
+    pub discord_token: String,
 }
 
 fn get_default_threads() -> NonZero<usize> {
